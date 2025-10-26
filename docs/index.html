@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Signals AI — v9.2</title>
+  <style>
+    body { font-family: system-ui, Arial; margin:16px; }
+    h1 { margin:0 0 12px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    button, select { padding:8px 12px; }
+    #log { font-family: ui-monospace, monospace; white-space: pre-wrap; background:#fafafa; border:1px solid #eee; padding:8px; height:160px; overflow:auto; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { border:1px solid #eee; padding:6px 8px; font-size:14px; }
+    th { background:#f7f7f7; text-align:left; }
+    .ok { color:#0a8; }
+    .err { color:#c00; }
+  </style>
+</head>
+<body>
+  <h1>Signals AI — v9.2</h1>
+
+  <div class="row">
+    <button id="btnRegister">Register Push</button>
+    <button id="btnTest">Test Push</button>
+  </div>
+
+  <div class="row">
+    <label>Estrategia:
+      <select id="strategy">
+        <option value="day">Day Trade (EMA9×EMA21 + RSI)</option>
+        <option value="swing">Swing (EMA20×EMA50 + RSI)</option>
+      </select>
+    </label>
+    <button id="btnStart">Start</button>
+    <button id="btnStop">Stop</button>
+  </div>
+
+  <h3>Histórico de Sinais</h3>
+  <table id="hist">
+    <thead>
+      <tr>
+        <th>Data</th><th>Par</th><th>Estratégia</th><th>Direção</th><th>Preço</th><th>Resultado</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3>Log</h3>
+  <div id="log">Aguardando…</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
