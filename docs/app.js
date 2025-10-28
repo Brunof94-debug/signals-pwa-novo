@@ -4,7 +4,7 @@
 const API_BASE = 'https://signals-push.brunoprof07.workers.dev';
 
 // Sua Chave VAPID Pública
-const VAPID_PUBLIC_KEY = 'BEswMdtoguBxL-PQrAjrS2WBX3ViaoWqU6mE710ZLaoQOahYGATcL29n7SvlF-fRSWnE3MTMum1kzs7PiR5X0Mo';
+const VAPID_PUBLIC_KEY = 'BEbKaaTkSCxP6SL09UutAEjlFckq4o1hQ5hHYl0FSQ4ovyNcvgH0wJftRx5UY5cWQlHT_voxil7FqBL2I6qKjr8';
 
 let swRegistration = null; // Armazena o registro do Service Worker
 const $ = s => document.querySelector(s);
