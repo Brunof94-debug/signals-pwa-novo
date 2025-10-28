@@ -1,15 +1,15 @@
-// --- Início do service-worker.js (CORRIGIDO) ---
+// --- Início do service-worker.js (v2 - Com dados e URL) ---
 
-const CACHE_NAME = 'signals-ai-v9.2-cache-v2'; // Mudei o nome para forçar a atualização
-// Lista de arquivos que o app precisa para funcionar offline (o "App Shell")
+const CACHE_NAME = 'signals-ai-v9.2-cache-v2';
 const urlsToCache = [
-  './', // <-- ESTA É A CORREÇÃO (era '/')
+  './',
   'index.html',
   'app.js',
   'manifest.webmanifest'
+  // Adicione ícones se os tiver e quiser cacheá-los
 ];
 
-// Evento 'install': Salva os arquivos essenciais no cache
+// Evento 'install' (Sem alterações significativas, talvez skipWaiting)
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -17,11 +17,11 @@ self.addEventListener('install', event => {
         console.log('Service Worker: Cache aberto');
         return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting()) // Força o novo service worker a ativar
+      .then(() => self.skipWaiting()) // Força ativação mais rápida
   );
 });
 
-// Evento 'activate': Limpa caches antigos
+// Evento 'activate' (Sem alterações)
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -33,49 +33,44 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim()) // Pega controle imediato da página
+    }).then(() => self.clients.claim())
   );
 });
 
-// Evento 'fetch': Tenta pegar do cache primeiro, antes de ir para a rede
+// Evento 'fetch' (Sem alterações)
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Se tiver no cache, retorna do cache
-        if (response) {
-          return response;
-        }
-        // Se não, vai para a rede
-        return fetch(event.request);
+        return response || fetch(event.request);
       }
     )
   );
 });
 
-// --- A PARTE MAIS IMPORTANTE ---
-// Evento 'push': O que fazer quando uma notificação chega do servidor
 
+// Evento 'push' MODIFICADO
 self.addEventListener('push', event => {
   console.log('Service Worker: Push Recebido.');
 
-  // Tenta ler os dados da notificação (o { title, body } que enviamos)
-  let data = { title: 'Novo Sinal!', body: 'Verifique o app.'};
+  // Tenta ler os dados completos: { title, body, data: { signalId, ... } }
+  let pushPayload = { title: 'Novo Sinal!', body: 'Verifique o app.', data: null};
   if (event.data) {
     try {
-      data = event.data.json();
+      pushPayload = event.data.json();
     } catch (e) {
       console.error('Service Worker: Erro ao ler dados do push', e);
+      // Tenta ler como texto simples se JSON falhar
+      pushPayload.body = event.data.text();
     }
   }
 
-  const title = data.title;
+  const title = pushPayload.title;
   const options = {
-    body: data.body,
-    // Ícones são opcionais, mas bons de ter. Você precisaria criar
-    // e subir esses arquivos para a pasta 'docs' e adicionar na lista 'urlsToCache'.
-    // icon: 'icon-192x192.png', 
-    // badge: 'icon-96x96.png'
+    body: pushPayload.body,
+    // icon: 'icon-192x192.png', // Adicione se tiver
+    // badge: 'icon-96x96.png', // Adicione se tiver
+    data: pushPayload.data // <<< GUARDA os detalhes do sinal na notificação
   };
 
   // Mostra a notificação
@@ -84,14 +79,37 @@ self.addEventListener('push', event => {
   );
 });
 
-// Evento 'notificationclick': O que fazer quando o usuário clica na notificação
+// Evento 'notificationclick' MODIFICADO
 self.addEventListener('notificationclick', event => {
   console.log('Service Worker: Notificação clicada.');
   event.notification.close(); // Fecha a notificação
 
-  // Abre o seu app (ou foca na aba, se já estiver aberta)
+  const signalData = event.notification.data; // <<< OBTÉM os detalhes do sinal
+  let urlToOpen = './'; // URL Padrão
+
+  // Se tivermos um ID (timestamp), adiciona-o à URL
+  if (signalData && signalData.signalId) {
+     urlToOpen = `./?signalId=${signalData.signalId}`;
+     console.log('Abrindo URL com signalId:', urlToOpen);
+  } else {
+     console.log('Nenhum signalId encontrado, abrindo URL padrão.');
+  }
+
+  // Tenta focar numa janela existente ou abre uma nova
   event.waitUntil(
-    clients.openWindow('./') // Abre a página principal do seu site
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Procura por uma janela já aberta do nosso app
+      for (const client of clientList) {
+        // Verifica se a URL base é a mesma e se podemos navegar
+        // A comparação de URL pode precisar de ajustes dependendo do host
+        if (client.url.startsWith(self.location.origin) && 'navigate' in client) {
+          client.navigate(urlToOpen); // Navega na janela existente
+          return client.focus(); // Foca nela
+        }
+      }
+      // Se nenhuma janela foi encontrada ou focada, abre uma nova
+      return clients.openWindow(urlToOpen);
+    })
   );
 });
 
