@@ -1,7 +1,7 @@
 // --- Início do app.js (v4 - Lê URL completa, adiciona ao histórico) ---
 
 const API_BASE = 'https://signals-push.brunoprof07.workers.dev';
-const VAPID_PUBLIC_KEY = 'BEbKaaTkSCxP6SL09UutAEjlFckq4o1hQ5hHYl0FSQ4ovyNcvgH0wJftRx5UY5cWQlHT_voxil7FqBL2I6qKjr8'; // <<< NOVA Chave Pública
+const VAPID_PUBLIC_KEY = 'BBwW7vLsh8_shutN881ggeqNmjIdhDUtFxTJMkCXtdaQMMNtmSRuwUN6M9sGCMN2mbj7UtVqmJAwrOgdSXzPfcI'; // <<< NOVA Chave Pública
 
 let swRegistration = null;
 const $ = s => document.querySelector(s);
