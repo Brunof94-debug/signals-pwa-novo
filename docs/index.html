@@ -3,62 +3,63 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Signals AI — v9.2</title>
+  <title>Signals AI — v9.3 Pro</title>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <style>
-    body { font-family: system-ui, Arial; margin:16px; }
+    body { font-family: system-ui, Arial; margin:16px; background: #f9f9f9; }
     h1 { margin:0 0 12px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-    button, select { padding:8px 12px; }
-    #log { font-family: ui-monospace, monospace; white-space: pre-wrap; background:#fafafa; border:1px solid #eee; padding:8px; height:160px; overflow:auto; }
-    table { border-collapse:collapse; width:100%; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items: center; }
+    button, select { padding:8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+    button:disabled { background: #eee; color: #999; cursor: not-allowed; }
+    #log { font-family: ui-monospace, monospace; white-space: pre-wrap; background:#fff; border:1px solid #eee; padding:8px; height:160px; overflow:auto; border-radius: 6px; }
+    table { border-collapse:collapse; width:100%; background: #fff; }
     th, td { border:1px solid #eee; padding:6px 8px; font-size:14px; }
     th { background:#f7f7f7; text-align:left; }
     .ok { color:#0a8; }
     .err { color:#c00; }
-
-    /* --- ESTILO ADICIONADO PARA DESTAQUE --- */
-    .highlighted-signal {
-      background-color: #ffff99; /* Amarelo claro */
-      font-weight: bold;
-    }
-    tr {
-        transition: background-color 0.5s ease; /* Transição suave */
-    }
-    /* --- FIM DO ESTILO ADICIONADO --- */
-
+    .warn { color:#f98200; }
+    .highlighted-signal { background-color: #ffff99 !important; font-weight: bold; }
+    tr { transition: background-color 0.5s ease; }
+    
+    /* --- Estilos para o status de login --- */
+    #auth-status { display: none; padding: 10px; background: #fff; border: 1px solid #eee; border-radius: 6px; }
+    #g_id_onload, #g_id_signin { margin-bottom: 12px; }
+    #btn-logout { background: #fff; color: #c00; border-color: #c00; }
   </style>
 </head>
 <body>
-  <h1>Signals AI — v9.2</h1>
+  <h1>Signals AI — v9.3 Pro</h1>
 
-  <div class="row">
-    <button id="btnRegister">Register Push</button>
-    <button id="btnTest">Test Push</button>
+  <div id="g_id_onload"
+     data-client_id="325904367225-llpfcqvmrpti13roj7ppo3a7ivgr8akh.apps.googleusercontent.com"
+     data-callback="handleCredentialResponse"
+     data-auto_select="true"
+     data-prompt_parent_id="g_id_onload">
+  </div>
+  
+  <div id="g_id_signin" class="g_id_signin" data-type="standard" data-theme="outline" data-size="large"></div>
+
+  <div id="auth-status" class="row">
+    <span id="user-email"></span>
+    <button id="btn-logout" style="display:none;">Logout</button>
   </div>
 
   <div class="row">
-    <label>Estrategia:
-      <select id="strategy">
-        <option value="day">Day Trade (EMA9×EMA21 + RSI)</option>
-        <option value="swing">Swing (EMA20×EMA50 + RSI)</option>
-      </select>
-    </label>
-    </div>
+    <button id="btnRegister" disabled>Ativar Notificações</button>
+    <button id="btnTest" disabled>Testar Notificação</button>
+  </div>
 
   <h3>Histórico de Sinais</h3>
   <table id="hist">
-    <thead>
-      <tr>
-        <th>Data</th><th>Par</th><th>Estratégia</th><th>Direção</th><th>Preço</th><th>Resultado</th>
-      </tr>
-    </thead>
+    <thead> <tr> <th>Data</th><th>Par</th><th>Estratégia</th><th>Direção</th><th>Preço</th><th>Resultado</th> </tr> </thead>
     <tbody></tbody>
   </table>
 
   <h3>Log</h3>
-  <div id="log">Aguardando…</div>
+  <div id="log">Aguardando...</div>
 
-  <script src="app.js"></script>
-  <link rel="manifest" href="manifest.webmanifest">
+  <script src="app.js?v=6"></script> <link rel="manifest" href="manifest.webmanifest">
 </body>
 </html>
