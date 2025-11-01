@@ -1,73 +1,55 @@
-// --- Início do app.js (v6 - COM AUTENTICAÇÃO GOOGLE) ---
+// --- Início do app.js (v7 - CORREÇÃO LÓGICA DE ATIVAÇÃO DO BOTÃO) ---
 
-// <<<--- ID de Cliente Google INSERIDO --->>>
+// <<<--- ID de Cliente Google (Correto) --->>>
 const GOOGLE_CLIENT_ID = "325904367225-llpfcqvmrpti13roj7ppo3a7ivgr8akh.apps.googleusercontent.com";
 
 const API_BASE = 'https://signals-push.brunoprof07.workers.dev';
-// <<<--- Chave Pública VAPID (a última que gerámos e funcionou com o JWK) --->>>
+// <<<--- Chave Pública VAPID (Correta) --->>>
 const VAPID_PUBLIC_KEY = 'BBwW7vLsh8_shutN881ggeqNmjIdhDUtFxTJMkCXtdaQMMNtmSRuwUN6M9sGCMN2mbj7UtVqmJAwrOgdSXzPfcI';
 
 let swRegistration = null;
-let currentUserId = null; // Guarda o ID do utilizador logado
-let googleJwt = null; // Guarda o token JWT do Google
+let currentUserId = null;
+let googleJwt = null;
 
 const $ = s => document.querySelector(s);
 const log = (m, cls = '') => { const d = $('#log'); if(d){ d.innerHTML += (cls ? `<span class="${cls}">` : '') + m + (cls ? '</span>':'') + '\n'; d.scrollTop = d.scrollHeight;} else { console.log(m); } };
 
-// --- FUNÇÕES DE AUTENTICAÇÃO (NOVAS) ---
+// --- FUNÇÕES DE AUTENTICAÇÃO (Sem alterações) ---
 window.onload = function() {
   log('Carregando Google Sign-In...');
   try {
       google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse, // Função chamada após login
+        callback: handleCredentialResponse,
         auto_select: true
       });
       google.accounts.id.renderButton(
         document.getElementById("g_id_signin"),
         { theme: "outline", size: "large" }
       );
-      // Opcional: Tenta login automático silencioso
-      // google.accounts.id.prompt(); 
-  } catch (e) {
-      console.error("Erro ao inicializar Google Sign-In:", e);
-      log("Erro ao carregar Google Sign-In. Verifique a consola.", "err");
-  }
+      // google.accounts.id.prompt(); // Tenta login silencioso
+  } catch (e) { console.error("Erro ao inicializar Google Sign-In:", e); log("Erro ao carregar Google Sign-In.", "err"); }
 };
-
 function handleCredentialResponse(response) {
   log('Login com Google bem-sucedido.', 'ok');
-  googleJwt = response.credential; // O token JWT
-  
-  // Decodifica o JWT para obter o user_id (sem bibliotecas externas)
+  googleJwt = response.credential;
   try {
     const payload = JSON.parse(atob(googleJwt.split('.')[1]));
-    currentUserId = payload.sub; // 'sub' (subject) é o ID único do Google
+    currentUserId = payload.sub;
     log(`Utilizador ID: ${currentUserId.substring(0, 10)}...`, 'ok');
-    updateUIAfterLogin(payload.email); // Atualiza a UI
-    checkPermissionAndRegister(); // Verifica permissões de push
-  } catch (e) {
-      console.error("Erro ao decodificar JWT:", e);
-      log("Erro ao processar login.", "err");
-  }
+    updateUIAfterLogin(payload.email);
+    checkPermissionAndRegister(); // <<<--- CHAMA A FUNÇÃO CORRIGIDA
+  } catch (e) { console.error("Erro ao decodificar JWT:", e); log("Erro ao processar login.", "err"); }
 }
-
 function updateUIAfterLogin(email) {
     if ($('#g_id_signin')) $('#g_id_signin').style.display = 'none';
     if ($('#auth-status')) $('#auth-status').style.display = 'flex';
     if ($('#user-email')) $('#user-email').innerText = `Logado como: ${email}`;
-    if ($('#btn-logout')) {
-        $('#btn-logout').style.display = 'block';
-        $('#btn-logout').onclick = handleLogout;
-    }
+    if ($('#btn-logout')) { $('#btn-logout').style.display = 'block'; $('#btn-logout').onclick = handleLogout; }
 }
-
 function handleLogout() {
     google.accounts.id.disableAutoSelect();
-    currentUserId = null;
-    googleJwt = null;
-    log('Logout efetuado.');
-    // Reseta UI
+    currentUserId = null; googleJwt = null; log('Logout efetuado.');
     if ($('#g_id_signin')) $('#g_id_signin').style.display = 'block';
     if ($('#auth-status')) $('#auth-status').style.display = 'none';
     if ($('#btnRegister')) $('#btnRegister').disabled = true;
@@ -132,33 +114,20 @@ function highlightSignalInHistory(signalId) {
 }
 
 
-// --- Funções PUSH (MODIFICADAS para enviar userId) ---
-
+// --- Funções PUSH (Sem alterações) ---
 async function sendPush(title, body) {
   if (!currentUserId) { log('Faça login para enviar um teste.', 'err'); return; }
   log('Enviando push de teste para o servidor...');
   try {
-    const r = await fetch(`${API_BASE}/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-          title: title, 
-          body: body, 
-          userId: currentUserId // <<< Envia o userId no Teste
-      }) 
-    });
+    const r = await fetch(`${API_BASE}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: title, body: body, userId: currentUserId }) });
     if (!r.ok) { const errorText = await r.text(); throw new Error(`send ${r.status} - ${errorText}`); }
     log(`Push OK: ${title}`, 'ok');
-  } catch (e) {
-    log('Push falhou: ' + e.message, 'err');
-  }
+  } catch (e) { log('Push falhou: ' + e.message, 'err'); }
 }
 async function testPush() { await sendPush('Teste Signals AI', 'Notificação de teste do App.'); }
-
 async function registerPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) { log('Push não suportado.', 'err'); return; }
   if (!currentUserId) { log('Precisa fazer login antes de registar o push.', 'err'); return; }
-  
   try {
     log('Registrando SW...');
     const swReg = await navigator.serviceWorker.register('service-worker.js');
@@ -171,75 +140,78 @@ async function registerPush() {
     const subscription = await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY) });
     log('Inscrição obtida.', 'ok');
     log('Enviando para servidor...');
-    
-    // <<<--- MODIFICAÇÃO: Envia o userId E a subscrição --->>>
-    const response = await fetch(`${API_BASE}/subscribe`, {
-        method: 'POST',
-        body: JSON.stringify({
-            userId: currentUserId,
-            subscription: subscription
-        }),
-        headers: { 'Content-Type': 'application/json' }
-    });
-    
+    const response = await fetch(`${API_BASE}/subscribe`, { method: 'POST', body: JSON.stringify({ userId: currentUserId, subscription: subscription }), headers: { 'Content-Type': 'application/json' } });
     if (!response.ok) { const errorText = await response.text(); throw new Error(`subscribe ${response.status} - ${errorText}`); }
     log('Registro OK! Salvo no backend.', 'ok');
     if ($('#btnRegister')) $('#btnRegister').disabled = true;
     if ($('#btnTest')) $('#btnTest').disabled = false;
   } catch (e) { log('Registro falhou: ' + e.message, 'err'); }
 }
+async function reregisterSubscription(subscription) {
+    if (!currentUserId) return;
+    log("Verificando associação da subscrição no backend...");
+     const response = await fetch(`${API_BASE}/subscribe`, { method: 'POST', body: JSON.stringify({ userId: currentUserId, subscription: subscription }), headers: { 'Content-Type': 'application/json' } });
+    if (response.ok) { log("Subscrição confirmada no backend.", "ok"); }
+    else { log("Falha ao re-confirmar subscrição.", "err"); }
+}
 
 // --- Funções Auxiliares e Inicialização ---
 function urlB64ToUint8Array(base64String) { const padding = '='.repeat((4 - base64String.length % 4) % 4); const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/'); const rawData = atob(base64); const outputArray = new Uint8Array(rawData.length); for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); } return outputArray; }
 
-// Modificado para ser chamado APÓS o login
+// <<<--- FUNÇÃO checkPermissionAndRegister (CORRIGIDA v7) --->>>
 function checkPermissionAndRegister() {
   const registerBtn = $('#btnRegister');
   const testBtn = $('#btnTest');
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if(registerBtn) registerBtn.disabled = true; if(testBtn) testBtn.disabled = true; log('Push não suportado.', 'err'); return; }
-  navigator.serviceWorker.ready.then(reg => {
-      reg.pushManager.getSubscription().then(subscription => {
-          if (subscription) {
-              log('Permissão OK e subscrição ativa.');
-              if(registerBtn) registerBtn.disabled = true;
-              if(testBtn) testBtn.disabled = false;
-              // Idealmente: Re-enviar a subscrição com o userId para o backend
-              // para garantir que está associada
-              reregisterSubscription(subscription);
-          } else {
-              if (Notification.permission === 'granted') {
-                log('Permissão OK. Clique "Ativar Notificações" para ligar.');
-                if(registerBtn) registerBtn.disabled = false;
-                if(testBtn) testBtn.disabled = true;
-              } else if (Notification.permission === 'denied') {
-                log('Permissão bloqueada.', 'err');
-                if(registerBtn) registerBtn.disabled = true;
-                if(testBtn) testBtn.disabled = true;
-              } else {
-                log('Aguardando permissão...');
-                if(registerBtn) registerBtn.disabled = false;
-                if(testBtn) testBtn.disabled = true;
-              }
-          }
-      });
-  });
-}
 
-// Função para garantir que o backend tem a nossa subscrição
-async function reregisterSubscription(subscription) {
-    if (!currentUserId) return; // Precisa de userId
-    log("Verificando associação da subscrição no backend...");
-     const response = await fetch(`${API_BASE}/subscribe`, {
-        method: 'POST',
-        body: JSON.stringify({
-            userId: currentUserId,
-            subscription: subscription
-        }),
-        headers: { 'Content-Type': 'application/json' }
+  // 1. Verifica se as APIs existem
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    log('Push não suportado por este navegador.', 'err');
+    if(registerBtn) registerBtn.disabled = true;
+    if(testBtn) testBtn.disabled = true;
+    return;
+  }
+
+  // 2. Verifica a permissão de notificação PRIMEIRO
+  const permission = Notification.permission;
+  
+  if (permission === 'denied') {
+    log('Permissão de notificação bloqueada. Habilite nas definições do site (no cadeado 🔒).', 'err');
+    if(registerBtn) registerBtn.disabled = true;
+    if(testBtn) testBtn.disabled = true;
+    return;
+  }
+
+  if (permission === 'granted') {
+    log('Permissão já concedida.');
+    // Se a permissão está OK, verifica se já temos uma subscrição
+    navigator.serviceWorker.ready.then(reg => {
+      reg.pushManager.getSubscription().then(subscription => {
+        if (subscription) {
+          log('Subscrição já ativa.', 'ok');
+          if(registerBtn) registerBtn.disabled = true;
+          if(testBtn) testBtn.disabled = false;
+          // Re-sincroniza com o backend para garantir
+          reregisterSubscription(subscription);
+        } else {
+          log('Permissão concedida, mas precisa de se registar. Clique em "Ativar".', 'warn');
+          if(registerBtn) registerBtn.disabled = false; // <<< HABILITA O BOTÃO
+          if(testBtn) testBtn.disabled = true;
+        }
+      });
+    }).catch(err => {
+        log('Erro ao verificar service worker ready: ' + err.message, 'err');
     });
-    if (response.ok) { log("Subscrição confirmada no backend.", "ok"); }
-    else { log("Falha ao re-confirmar subscrição.", "err"); }
+    return;
+  }
+
+  if (permission === 'default') {
+    log('Aguardando permissão. Clique em "Ativar Notificações".');
+    if(registerBtn) registerBtn.disabled = false; // <<< HABILITA O BOTÃO
+    if(testBtn) testBtn.disabled = true;
+    return;
+  }
 }
+// <<<--- FIM DA FUNÇÃO CORRIGIDA --->>>
 
 function handleUrlParameters() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -267,7 +239,6 @@ function handleUrlParameters() {
     } else { log('signalId inválido na URL.', 'err'); }
   } else { log('Nenhum signalId encontrado na URL.'); }
 }
-
 
 // --- Configuração dos Botões ---
 const btnRegister = $('#btnRegister');
